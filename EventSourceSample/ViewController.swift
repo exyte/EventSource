@@ -19,8 +19,13 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let serverURL = URL(string: "http://127.0.0.1:8080/sse")!
-        eventSource = EventSource(url: serverURL, headers: ["Authorization": "Bearer basic-auth-token"])
+        var urlRequest = URLRequest(url: URL(string: "http://127.0.0.1:8080/sse")!)
+        urlRequest.httpMethod = "POST"
+        urlRequest.addValue("Bearer basic-auth-token", forHTTPHeaderField: "Authorization")
+
+        eventSource = EventSource(urlRequest: urlRequest)
+
+        eventSource?.connect()
 
         eventSource?.onOpen { [weak self] in
             self?.status.backgroundColor = UIColor(red: 166/255, green: 226/255, blue: 46/255, alpha: 1)
