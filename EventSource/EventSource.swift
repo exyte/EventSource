@@ -76,7 +76,8 @@ public protocol EventSourceProtocol {
 open class EventSource: NSObject, EventSourceProtocol, URLSessionDataDelegate {
     static let DefaultRetryTime = 3000
 
-    public let url: URL
+    public let urlRequest: URLRequest
+    public var url: URL { urlRequest.url! }
     private(set) public var lastEventId: String?
     private(set) public var retryTime = EventSource.DefaultRetryTime
     private(set) public var headers: [String: String]
@@ -93,11 +94,10 @@ open class EventSource: NSObject, EventSourceProtocol, URLSessionDataDelegate {
     private var urlSession: URLSession?
 
     public init(
-        url: URL,
-        headers: [String: String] = [:]
+        urlRequest: URLRequest
     ) {
-        self.url = url
-        self.headers = headers
+        self.urlRequest = urlRequest
+        self.headers = urlRequest.allHTTPHeaderFields ?? [:]
 
         readyState = EventSourceState.closed
         operationQueue = OperationQueue()
@@ -112,7 +112,7 @@ open class EventSource: NSObject, EventSourceProtocol, URLSessionDataDelegate {
 
         let configuration = sessionConfiguration(lastEventId: lastEventId)
         urlSession = URLSession(configuration: configuration, delegate: self, delegateQueue: operationQueue)
-        urlSession?.dataTask(with: url).resume()
+        urlSession?.dataTask(with: urlRequest).resume()
     }
 
     public func disconnect() {
@@ -137,17 +137,17 @@ open class EventSource: NSObject, EventSourceProtocol, URLSessionDataDelegate {
         eventListeners[event] = handler
     }
 
-	public func removeEventListener(_ event: String) {
-		eventListeners.removeValue(forKey: event)
-	}
+    public func removeEventListener(_ event: String) {
+        eventListeners.removeValue(forKey: event)
+    }
 
-	public func events() -> [String] {
-		return Array(eventListeners.keys)
-	}
+    public func events() -> [String] {
+        return Array(eventListeners.keys)
+    }
 
     open func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
 
-		if readyState != .open {
+        if readyState != .open {
             return
         }
 
@@ -229,8 +229,8 @@ private extension EventSource {
                 continue
             }
 
-            if event.event == nil || event.event == "message" {
-                mainQueue.async { [weak self] in self?.onMessageCallback?(event.id, "message", event.data) }
+            if event.event == nil || event.event == "thread.message.delta" {
+                mainQueue.async { [weak self] in self?.onMessageCallback?(event.id, "thread.message.delta", event.data) }
             }
 
             if let eventName = event.event, let eventHandler = eventListeners[eventName] {
@@ -252,3 +252,11 @@ private extension EventSource {
         }
     }
 }
+
+public extension EventSourceProtocol {
+    var retryTime: Int {
+        return 5
+    }
+}
+
+
