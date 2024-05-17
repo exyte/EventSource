@@ -21,10 +21,6 @@ let package = Package(
         .target(
             name: "EventSourceHttpBody",
 			dependencies: [],
-			path: "EventSourceHttpBody"),
-        .testTarget(
-			name: "EventSourceTests",
-			dependencies: ["EventSource"],
-			path: "EventSourceTests"),
+			path: "EventSource")
     ]
 )
